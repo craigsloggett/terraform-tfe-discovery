@@ -1,5 +1,3 @@
-provider "tfe" {
-  organization = "craigsloggett-lab"
-}
+provider "tfe" {}
 
 run "validate" {}
