@@ -3,12 +3,12 @@
 ```hcl
 provider "tfe" {
   hostname     = "app.terraform.io"
-  organization = var.hcp_terraform_organization_name
 }
 
 # Use the module like a data source to get details about the resources in your organization.
 module "discovery" {
-  source = "git::https://github.com/craigsloggett-lab/terraform-tfe-discovery?ref=vx.x.x"
+  source  = "craigsloggett/discovery/tfe"
+  version = "0.12.6"
 }
 
 # Using the outputs of the module, the default resources
@@ -41,7 +41,8 @@ import {
 resource "tfe_organization_membership" "this" {
   for_each = module.discovery.tfe_organization_membership
 
-  email = each.value.email
+  organization = tfe_organization.this.name
+  email        = each.value.email
 }
 
 # The "owners" Team
@@ -52,7 +53,8 @@ import {
 }
 
 resource "tfe_team" "owners" {
-  name = "owners"
+  name         = "owners"
+  organization = tfe_organization.this.name
 }
 
 # The "owners" Team Members (Users)
@@ -76,7 +78,7 @@ import {
 
 # tflint-ignore: terraform_required_providers
 resource "tfe_project" "default" {
-  name        = "Default Project"
-  description = "The default project for new workspaces."
+  name         = "Default Project"
+  organization = tfe_organization.this.name
 }
 ```
