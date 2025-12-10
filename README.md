@@ -83,8 +83,9 @@ import {
 resource "tfe_variable_set" "this" {
   for_each = module.discovery.tfe_variable_set
 
-  name        = each.value.name
-  description = each.value.description
+  name         = each.value.name
+  description  = each.value.description
+  organization = tfe_organization.this.name
 }
 ```
 
