@@ -9,8 +9,9 @@ data "external" "variable_set_names" {
 }
 
 data "tfe_variable_set" "this" {
-  for_each = local.variable_set_names
-  name     = each.key
+  for_each     = local.variable_set_names
+  name         = each.key
+  organization = data.tfe_organization.this.name
 }
 
 data "tfe_variables" "this" {

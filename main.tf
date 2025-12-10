@@ -1,3 +1,6 @@
+# This file contains all of the resources included in a new HCP Terraform
+# organization. Additional resources are "discovered" in `discovery.tf`.
+
 data "tfe_organizations" "this" {}
 
 data "tfe_organization" "this" {
