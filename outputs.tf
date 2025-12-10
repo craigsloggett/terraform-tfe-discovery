@@ -37,3 +37,8 @@ output "tfe_variable_set" {
   value       = local.variable_sets
   description = "A map of variable sets and their details as configured in the HCP Terraform organization."
 }
+
+output "tfe_project_variable_set" {
+  value       = local.project_variable_sets
+  description = "A map of variable set and project pairs."
+}
