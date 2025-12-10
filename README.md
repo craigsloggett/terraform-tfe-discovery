@@ -22,22 +22,71 @@ The resulting data source attributes are then restructured using `locals` and pr
 
 ### Example
 
-The resource type `tfe_team` is provided as an output containing a map of teams that have been configured.
+The resource type `tfe_variable_set` is provided as an output containing a map of variable sets that have been configured.
 
 ```hcl
 
-output "tfe_team" {
-  value = {
-    owners = {
-      id                          = data.tfe_team.owners.id
-      organization_membership_ids = local.owners_team_organization_membership_ids
+output "tfe_variable_set" {
+  value       = local.variable_sets
+  description = "A map of variable sets and their details as configured in the HCP Terraform organization."
+}
+
+locals {
+  # The output of the `external` data source is a jsonencoded string so
+  # this local variable does the jsondecode in one spot and converts it
+  # to a "set" for convenience when used with "for_each".
+  variable_set_names = toset(jsondecode(data.external.variable_set_names.result.names))
+
+  # The `tfe_variable_set` data source includes the variable IDs, but
+  # not any details about the variables.
+  variable_sets_without_variables = {
+    for name in local.variable_set_names :
+    data.tfe_variable_set.this[name].id => data.tfe_variable_set.this[name]
+  }
+
+  # The `tfe_variable` data source contains a lot of duplicate data so
+  # this will clean it up and prepare it to be merged into the relevant
+  # variable set map that is output by this module.
+  variable_set_variables = {
+    for name, variable_set in data.tfe_variables.this :
+    variable_set.variable_set_id => {
+      for variable in variable_set.variables :
+      variable.id => variable
     }
   }
-  description = "A map of the HCP Terraform teams with their 'id' as the only key. Only includes the 'owners' team."
+
+  # Merge the variable set data with the variable data associated with
+  # each variable set, giving a convenient place to import variable sets
+  # and their relevant variables.
+  variable_sets = {
+    for id, variable_set in local.variable_sets_without_variables :
+    id => merge(
+      variable_set,
+      {
+        variables = try(local.variable_set_variables[id], {})
+      }
+    )
+  }
 }
 ```
 
-The ID of the owners team can then be easily be accessed using the module: `module.discovery.tfe_team.owners.id`. The members of the team are also grouped in the same output to provide a logical hierarchy of entities (a member belongs to a team).
+The variable sets can then be easily be accessed using the module: `module.discovery.tfe_variable_set`. The variables configured in the variable sets are also grouped in the same output to provide a logical hierarchy of entities (a variable belongs to a variable set). This makes importing the resources straightforward:
+
+```hcl
+import {
+  for_each = module.discovery.tfe_variable_set
+
+  id = each.key
+  to = tfe_variable_set.this[each.key]
+}
+
+resource "tfe_variable_set" "this" {
+  for_each = module.discovery.tfe_variable_set
+
+  name        = each.value.name
+  description = each.value.description
+}
+```
 
 <!-- BEGIN_TF_DOCS -->
 ## Usage
@@ -162,8 +211,8 @@ No inputs.
 |------|-------------|
 | <a name="output_tfe_organization"></a> [tfe\_organization](#output\_tfe\_organization) | A map of the HCP Terraform organizations details including 'id' and 'name'. Only inludes 'this' organization. |
 | <a name="output_tfe_organization_membership"></a> [tfe\_organization\_membership](#output\_tfe\_organization\_membership) | A list containing details about the HCP Terraform organization members. |
-| <a name="output_tfe_project"></a> [tfe\_project](#output\_tfe\_project) | A map of the HCP Terraform projects with their 'id' as the only key. Only includes the 'Default Project' project. |
-| <a name="output_tfe_team"></a> [tfe\_team](#output\_tfe\_team) | A map of the HCP Terraform teams with their 'id' as the only key. Only includes the 'owners' team. |
+| <a name="output_tfe_project"></a> [tfe\_project](#output\_tfe\_project) | A map of the HCP Terraform projects with their 'id' as the only key. Currently, this only supports the 'Default Project' project. |
+| <a name="output_tfe_team"></a> [tfe\_team](#output\_tfe\_team) | A map of the HCP Terraform teams with their 'id' and the members represented as `organization_membership_ids`. Currently, this only supports the 'owners' team. |
 | <a name="output_tfe_variable_set"></a> [tfe\_variable\_set](#output\_tfe\_variable\_set) | A map of variable sets and their details as configured in the HCP Terraform organization. |
 <!-- END_TF_DOCS -->
 

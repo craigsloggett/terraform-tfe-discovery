@@ -21,7 +21,7 @@ output "tfe_team" {
       organization_membership_ids = local.owners_team_organization_membership_ids
     }
   }
-  description = "A map of the HCP Terraform teams with their 'id' as the only key. Only includes the 'owners' team."
+  description = "A map of the HCP Terraform teams with their 'id' and the members represented as `organization_membership_ids`. Currently, this only supports the 'owners' team."
 }
 
 output "tfe_project" {
@@ -30,7 +30,7 @@ output "tfe_project" {
       id = data.tfe_project.default.id
     }
   }
-  description = "A map of the HCP Terraform projects with their 'id' as the only key. Only includes the 'Default Project' project."
+  description = "A map of the HCP Terraform projects with their 'id' as the only key. Currently, this only supports the 'Default Project' project."
 }
 
 output "tfe_variable_set" {
