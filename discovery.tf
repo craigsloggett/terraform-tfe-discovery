@@ -18,3 +18,15 @@ data "tfe_variables" "this" {
   for_each        = local.variable_set_names
   variable_set_id = data.tfe_variable_set.this[each.key].id
 }
+
+data "tfe_workspace_ids" "this" {
+  names        = ["*"]
+  organization = data.tfe_organization.this.name
+}
+
+data "tfe_workspace" "this" {
+  for_each = toset([for name, id in data.tfe_workspace_ids.this.ids : name])
+
+  name         = each.key
+  organization = data.tfe_organization.this.name
+}

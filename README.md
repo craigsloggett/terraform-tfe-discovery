@@ -205,6 +205,8 @@ No inputs.
 | [tfe_team.owners](https://registry.terraform.io/providers/hashicorp/tfe/0.71.0/docs/data-sources/team) | data source |
 | [tfe_variable_set.this](https://registry.terraform.io/providers/hashicorp/tfe/0.71.0/docs/data-sources/variable_set) | data source |
 | [tfe_variables.this](https://registry.terraform.io/providers/hashicorp/tfe/0.71.0/docs/data-sources/variables) | data source |
+| [tfe_workspace.this](https://registry.terraform.io/providers/hashicorp/tfe/0.71.0/docs/data-sources/workspace) | data source |
+| [tfe_workspace_ids.this](https://registry.terraform.io/providers/hashicorp/tfe/0.71.0/docs/data-sources/workspace_ids) | data source |
 
 ## Outputs
 
@@ -216,6 +218,7 @@ No inputs.
 | <a name="output_tfe_project_variable_set"></a> [tfe\_project\_variable\_set](#output\_tfe\_project\_variable\_set) | A map of variable set and project pairs. |
 | <a name="output_tfe_team"></a> [tfe\_team](#output\_tfe\_team) | A map of the HCP Terraform teams with their 'id' and the members represented as `organization_membership_ids`. Currently, this only supports the 'owners' team. |
 | <a name="output_tfe_variable_set"></a> [tfe\_variable\_set](#output\_tfe\_variable\_set) | A map of variable sets and their details as configured in the HCP Terraform organization. |
+| <a name="output_tfe_workspace"></a> [tfe\_workspace](#output\_tfe\_workspace) | A map of workspaces and their details as configured in the HCP Terraform organization. |
 <!-- END_TF_DOCS -->
 
 ## Manual Onboarding Setup

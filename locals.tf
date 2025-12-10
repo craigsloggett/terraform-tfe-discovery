@@ -62,4 +62,11 @@ locals {
     for pair in local.project_variable_set_pairs :
     "${pair.variable_set_id}_${pair.project_id}" => pair
   }
+
+  # Use the workspace ID as the keys in the map to align with
+  # other resources being iterated over.
+  workspaces = {
+    for name, workspace in data.tfe_workspace.this :
+    workspace.id => workspace
+  }
 }
