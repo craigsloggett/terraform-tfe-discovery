@@ -42,3 +42,8 @@ output "tfe_project_variable_set" {
   value       = local.project_variable_sets
   description = "A map of variable set and project pairs."
 }
+
+output "tfe_workspace" {
+  value       = local.workspaces
+  description = "A map of workspaces and their details as configured in the HCP Terraform organization."
+}
