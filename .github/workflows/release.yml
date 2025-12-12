@@ -12,21 +12,19 @@ permissions:
 
 jobs:
   release:
-    name: Release
+    name: GitHub
     runs-on: ubuntu-24.04
+
     outputs:
-      new-release-published: ${{ steps.release.outputs.new_release_published }}
-      new-release-version: ${{ steps.release.outputs.new_release_version }}
+      new-release-published: ${{ steps.release.outputs.new-release-published }}
+      new-release-version: ${{ steps.release.outputs.new-release-version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - name: Release
+
+      - name: Create a GitHub Release
         id: release
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        uses: craigsloggett/create-github-release@4a871ba389d1e0977cd6bc884c84199b455624c4 # v1.0.0
         with:
-          semantic_version: 25.0.2
-          extra_plugins: |
-            @semantic-release/git@10.0.1
-            conventional-changelog-conventionalcommits@9.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
