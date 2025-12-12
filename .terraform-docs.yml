@@ -11,6 +11,11 @@ content: |-
   {{ include "examples/imports/main.tf" }}
   ```
 
+  ### imports.tf
+  ```hcl
+  {{ include "examples/imports/imports.tf" }}
+  ```
+
   {{ .Requirements }}
 
   {{ .Providers }}

@@ -94,37 +94,34 @@ resource "tfe_variable_set" "this" {
 
 ### main.tf
 ```hcl
-# tflint-ignore: terraform_required_version
+terraform {
+  # Version v1.5.0 is the first version to introduce `import` blocks.
+  required_version = "~> 1.5"
 
-# Use the module like a data source to get details about the resources in your organization.
+  required_providers {
+    tfe = {
+      source  = "hashicorp/tfe"
+      version = "0.71.0"
+    }
+  }
+}
+
+# The discovery module is a data source for all of the identifiers being imported.
+
+# It is used to capture the names and configuration of each resource so you don't
+# have to enter them in manually for the organization being managed.
+
+# The module expects a Team API Token for the "owners" team to be available as the
+# TFE_TOKEN environment variable in the Terraform run environment.
 module "discovery" {
   source  = "craigsloggett/discovery/tfe"
-  version = "0.12.6"
+  version = "0.14.1"
 }
 
-# Using the outputs of the module, the default resources
-# that come with every new organization can be easily
-# imported.
-
-# HCP Terraform Organization
-
-import {
-  id = module.discovery.tfe_organization.this.name
-  to = tfe_organization.this
-}
-
+# The following are the resources that come with every new HCP Terraform organization.
 resource "tfe_organization" "this" {
   name  = module.discovery.tfe_organization.this.name
   email = module.discovery.tfe_organization.this.email
-}
-
-# HCP Terraform Organization Members (Users)
-
-import {
-  for_each = module.discovery.tfe_organization_membership
-
-  id = each.key
-  to = tfe_organization_membership.this[each.key]
 }
 
 resource "tfe_organization_membership" "this" {
@@ -134,23 +131,9 @@ resource "tfe_organization_membership" "this" {
   email        = each.value.email
 }
 
-# The "owners" Team
-
-import {
-  id = "${module.discovery.tfe_organization.this.name}/${module.discovery.tfe_team.owners.id}"
-  to = tfe_team.owners
-}
-
 resource "tfe_team" "owners" {
   name         = "owners"
   organization = tfe_organization.this.name
-}
-
-# The "owners" Team Members (Users)
-
-import {
-  id = module.discovery.tfe_team.owners.id
-  to = tfe_team_organization_members.owners
 }
 
 resource "tfe_team_organization_members" "owners" {
@@ -158,17 +141,48 @@ resource "tfe_team_organization_members" "owners" {
   organization_membership_ids = module.discovery.tfe_team.owners.organization_membership_ids
 }
 
-# The "Default Project" Project
-
-import {
-  id = module.discovery.tfe_project.default.id
-  to = tfe_project.default
-}
-
-# tflint-ignore: terraform_required_providers
 resource "tfe_project" "default" {
   name         = "Default Project"
   organization = tfe_organization.this.name
+}
+```
+
+### imports.tf
+```hcl
+# Using the outputs of the module, the default resources
+# that come with every new organization can be easily
+# imported.
+
+# The HCP Terraform organization.
+import {
+  id = module.discovery.tfe_organization.this.name
+  to = tfe_organization.this
+}
+
+# The members of the HCP Terraform organization.
+import {
+  for_each = module.discovery.tfe_organization_membership
+
+  id = each.key
+  to = tfe_organization_membership.this[each.key]
+}
+
+# The "owners" Team
+import {
+  id = "${module.discovery.tfe_organization.this.name}/${module.discovery.tfe_team.owners.id}"
+  to = tfe_team.owners
+}
+
+# The members of the "owners" team.
+import {
+  id = module.discovery.tfe_team.owners.id
+  to = tfe_team_organization_members.owners
+}
+
+# The "Default Project" Project
+import {
+  id = module.discovery.tfe_project.default.id
+  to = tfe_project.default
 }
 ```
 
