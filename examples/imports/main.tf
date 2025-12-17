@@ -5,7 +5,7 @@ terraform {
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
-      version = "0.71.0"
+      version = "~> 0.71"
     }
   }
 }
@@ -19,7 +19,7 @@ terraform {
 # TFE_TOKEN environment variable in the Terraform run environment.
 module "discovery" {
   source  = "craigsloggett/discovery/tfe"
-  version = "0.14.1"
+  version = "0.14.3"
 }
 
 # The following are the resources that come with every new HCP Terraform organization.

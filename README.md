@@ -24,7 +24,7 @@ terraform {
   required_providers {
     tfe = {
       source  = "hashicorp/tfe"
-      version = "0.71.0"
+      version = "~> 0.71"
     }
   }
 }
@@ -38,7 +38,7 @@ terraform {
 # TFE_TOKEN environment variable in the Terraform run environment.
 module "discovery" {
   source  = "craigsloggett/discovery/tfe"
-  version = "0.14.1"
+  version = "0.14.3"
 }
 
 # The following are the resources that come with every new HCP Terraform organization.
@@ -115,14 +115,14 @@ import {
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.7 |
 | <a name="requirement_external"></a> [external](#requirement\_external) | >= 2.3.0 |
-| <a name="requirement_tfe"></a> [tfe](#requirement\_tfe) | >= 0.44.0 |
+| <a name="requirement_tfe"></a> [tfe](#requirement\_tfe) | >= 0.71.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_external"></a> [external](#provider\_external) | >= 2.3.0 |
-| <a name="provider_tfe"></a> [tfe](#provider\_tfe) | >= 0.44.0 |
+| <a name="provider_tfe"></a> [tfe](#provider\_tfe) | >= 0.71.0 |
 
 ## Inputs
 
