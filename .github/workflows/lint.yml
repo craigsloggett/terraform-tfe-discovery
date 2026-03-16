@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Lint YAML Files
-        uses: craigsloggett/lint-yaml@ad4c7c441a605c10fd1a0c6aaa89fc4273400659 # v1.0.7
+        uses: craigsloggett/lint-yaml@3665f3431cf43d63ba56e47e297b0eb7d03f46b9 # v1.0.8
 
   terraform:
     name: Terraform
