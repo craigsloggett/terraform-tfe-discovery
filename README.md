@@ -112,7 +112,7 @@ import {
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.7 |
 | <a name="requirement_external"></a> [external](#requirement\_external) | >= 2.3.0 |
 | <a name="requirement_tfe"></a> [tfe](#requirement\_tfe) | >= 0.71.0 |
@@ -120,7 +120,7 @@ import {
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_external"></a> [external](#provider\_external) | >= 2.3.0 |
 | <a name="provider_tfe"></a> [tfe](#provider\_tfe) | >= 0.71.0 |
 
@@ -131,7 +131,7 @@ No inputs.
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [external_external.owners_team_emails](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
 | [external_external.variable_set_names](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
 | [tfe_organization.this](https://registry.terraform.io/providers/hashicorp/tfe/latest/docs/data-sources/organization) | data source |
@@ -148,7 +148,7 @@ No inputs.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_tfe_organization"></a> [tfe\_organization](#output\_tfe\_organization) | A map of the HCP Terraform organizations details including 'id' and 'name'. Only inludes 'this' organization. |
 | <a name="output_tfe_organization_membership"></a> [tfe\_organization\_membership](#output\_tfe\_organization\_membership) | A list containing details about the HCP Terraform organization members. |
 | <a name="output_tfe_project"></a> [tfe\_project](#output\_tfe\_project) | A map of the HCP Terraform projects with their 'id' as the only key. Currently, this only supports the 'Default Project' project. |
