@@ -14,46 +14,71 @@
 # $ export TFE_TOKEN="your-token-here"
 #
 # Then add the following Terraform code to your root module:
-# data "external" "variable_sets" {
+# data "external" "variable_set_names" {
 #   program = ["sh", "${path.module}/scripts/get_variable_sets.sh"]
+#
+#   query = {
+#     organization_name = data.tfe_organization.this.name
+#   }
 # }
 #
 # Dependencies:
 #   - jq (for JSON parsing)
 #   - curl (for querying the API)
-main() {
-  set -eu
+set -euf
 
-  # Ensure required environment variables have been set.
-  : "${TFE_TOKEN:?"<-- this required environment variable is not set."}"
+# Ensure required environment variables have been set.
+: "${TFE_TOKEN:?"<-- this required environment variable is not set."}"
 
-  # Check if the required utilities are installed.
-  for utility in jq curl; do
-    command -v "${utility}" >/dev/null || {
-      printf '%s\n' "Error: ${utility} is not installed." >&2
-      exit 1
-    }
-  done
+# Check if the required utilities are installed.
+for utility in jq curl; do
+  if ! command -v "${utility}" >/dev/null 2>&1; then
+    printf '%s\n' "Error: ${utility} is not installed." >&2
+    exit 1
+  fi
+done
 
-  # Set API connection configuration.
-  tfe_token="${TFE_TOKEN}"
-  organization_name="$(jq -r '.organization_name')"
+# tfe_api_get prints the body of a successful GET request to the HCP Terraform
+# API and fails with the API's error response otherwise.
+tfe_api_get() (
+  path="${1:?path is required}"
 
-  # Set the `curl` options once so we can just write `curl "$@"` everywhere.
-  set -- --silent --header "Authorization: Bearer ${tfe_token}" --header "Content-Type: application/vnd.api+json"
+  # A retried request appends its body to stdout, so the body goes to a file
+  # that curl truncates on each attempt.
+  body="$(mktemp)"
+  trap 'rm -f "${body}"' EXIT INT TERM HUP
 
-  variable_sets_json="$(curl "$@" https://app.terraform.io/api/v2/organizations/"${organization_name}"/varsets)"
-
-  variable_set_names="$(
-    printf '%s\n' "${variable_sets_json}" |
-      jq -r '.data[].attributes.name' |
-      while read -r variable_set_name; do
-        printf '%s\n' "${variable_set_name}"
-      done |
-      jq --raw-input --null-input '{"names": ( [inputs] | unique | tojson )}'
+  # The tfe provider retries rate limited requests, but curl only does so when
+  # asked, and a plan can exceed the API's rate limit on its own.
+  status="$(
+    curl --silent --show-error --retry 5 \
+      --header "Authorization: Bearer ${TFE_TOKEN}" \
+      --header "Content-Type: application/vnd.api+json" \
+      --output "${body}" \
+      --write-out '%{http_code}' \
+      "https://app.terraform.io/api/v2${path}"
   )"
 
-  printf '%s\n' "${variable_set_names}"
+  case "${status}" in
+    2??)
+      cat "${body}"
+      ;;
+    *)
+      printf '%s\n' "Error: GET ${path} returned HTTP ${status}: $(cat "${body}")" >&2
+      return 1
+      ;;
+  esac
+)
+
+# main prints the names of the variable sets as an external data source result.
+main() {
+  organization_name="$(jq -r '.organization_name // empty')"
+  : "${organization_name:?"<-- this required query argument is not set."}"
+
+  variable_sets_json="$(tfe_api_get "/organizations/${organization_name}/varsets")"
+
+  printf '%s\n' "${variable_sets_json}" |
+    jq '{names: ([.data[].attributes.name] | unique | tojson)}'
 }
 
 main "$@"

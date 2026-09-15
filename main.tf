@@ -40,7 +40,7 @@ data "external" "owners_team_emails" {
   program = ["sh", "${path.module}/scripts/get_owners_team_emails.sh"]
 
   query = {
-    organization_name = data.tfe_organization.this.name
+    owners_team_id = data.tfe_team.owners.id
   }
 }
 
