@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # get_owners_team_emails - Get the set of emails associated with the owners
-#                          team HCP Terraform.
+#                          team in HCP Terraform.
 #
 # This script queries the HCP Terraform API to retrieve the email addresses
 # of the users in the owners team. It is expected to be used with the
@@ -16,63 +16,85 @@
 # Then add the following Terraform code to your root module:
 # data "external" "owners_team_emails" {
 #   program = ["sh", "${path.module}/scripts/get_owners_team_emails.sh"]
+#
+#   query = {
+#     owners_team_id = data.tfe_team.owners.id
+#   }
 # }
 #
 # Dependencies:
 #   - jq (for JSON parsing)
 #   - curl (for querying the API)
+set -euf
+
+# Ensure required environment variables have been set.
+: "${TFE_TOKEN:?"<-- this required environment variable is not set."}"
+
+# Check if the required utilities are installed.
+for utility in jq curl; do
+  if ! command -v "${utility}" >/dev/null 2>&1; then
+    printf '%s\n' "Error: ${utility} is not installed." >&2
+    exit 1
+  fi
+done
+
+# tfe_api_get prints the body of a successful GET request to the HCP Terraform
+# API and fails with the API's error response otherwise.
+tfe_api_get() (
+  path="${1:?path is required}"
+
+  # A retried request appends its body to stdout, so the body goes to a file
+  # that curl truncates on each attempt.
+  body="$(mktemp)"
+  trap 'rm -f "${body}"' EXIT INT TERM HUP
+
+  # The tfe provider retries rate limited requests, but curl only does so when
+  # asked, and a plan can exceed the API's rate limit on its own.
+  status="$(
+    curl --silent --show-error --retry 5 \
+      --header "Authorization: Bearer ${TFE_TOKEN}" \
+      --header "Content-Type: application/vnd.api+json" \
+      --output "${body}" \
+      --write-out '%{http_code}' \
+      "https://app.terraform.io/api/v2${path}"
+  )"
+
+  case "${status}" in
+    2??)
+      cat "${body}"
+      ;;
+    *)
+      printf '%s\n' "Error: GET ${path} returned HTTP ${status}: $(cat "${body}")" >&2
+      return 1
+      ;;
+  esac
+)
+
+# main prints the emails of the owners team members that are not service
+# accounts as an external data source result.
 main() {
-  set -eu
+  owners_team_id="$(jq -r '.owners_team_id // empty')"
+  : "${owners_team_id:?"<-- this required query argument is not set."}"
 
-  # Ensure required environment variables have been set.
-  : "${TFE_TOKEN:?"<-- this required environment variable is not set."}"
+  owners_team_json="$(tfe_api_get "/teams/${owners_team_id}?include=organization-memberships,users")"
 
-  # Check if the required utilities are installed.
-  for utility in jq curl; do
-    command -v "${utility}" >/dev/null || {
-      printf '%s\n' "Error: ${utility} is not installed." >&2
-      exit 1
-    }
-  done
-
-  # Set API connection configuration.
-  tfe_token="${TFE_TOKEN}"
-  organization_name="$(jq -r '.organization_name')"
-
-  # Set the `curl` options once so we can just write `curl "$@"` everywhere.
-  set -- --silent --header "Authorization: Bearer ${tfe_token}" --header "Content-Type: application/vnd.api+json"
-
-  teams_json="$(curl "$@" https://app.terraform.io/api/v2/organizations/"${organization_name}"/teams)"
-
-  owners_team_id="$(
-    printf '%s\n' "${teams_json}" |
-      jq -r '.data[] | select(.attributes.name == "owners") | .id'
-  )"
-
-  owners_team_emails="$(
-    curl "$@" https://app.terraform.io/api/v2/teams/"${owners_team_id}" |
-      jq -r '.data.relationships."organization-memberships".data[].id' |
-      while read -r organization_membership_id; do
-        organization_membership_json="$(
-          curl "$@" https://app.terraform.io/api/v2/organization-memberships/"${organization_membership_id}"
-        )"
-
-        user_id="$(
-          printf '%s\n' "${organization_membership_json}" |
-            jq -r '.data.relationships.user.data.id'
-        )"
-
-        if ! curl "$@" https://app.terraform.io/api/v2/users/"${user_id}" |
-          jq -e '.data.attributes."is-service-account"' >/dev/null; then
-          # Output one email per line.
-          printf '%s\n' "${organization_membership_json}" |
-            jq -r '.data.attributes.email'
-        fi
-      done |
-      jq --raw-input --null-input '{"emails": ( [inputs] | unique | tojson )}'
-  )"
-
-  printf '%s\n' "${owners_team_emails}"
+  # Service accounts are excluded to match the tfe_team_organization_members
+  # resource, which ignores them when reading a team's members.
+  printf '%s\n' "${owners_team_json}" |
+    jq '
+      (
+        [.included[]?
+        | select(.type == "users" and .attributes."is-service-account")
+        | {key: .id, value: true}]
+        | from_entries
+      ) as $service_accounts
+      | [
+          .included[]? | select(.type == "organization-memberships")
+          | select($service_accounts[.relationships.user.data.id // ""] | not)
+          | .attributes.email
+        ]
+      | {emails: (unique | tojson)}
+    '
 }
 
 main "$@"
