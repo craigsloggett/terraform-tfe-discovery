@@ -83,7 +83,9 @@ main() {
   printf '%s\n' "${owners_team_json}" |
     jq '
       (
-        [.included[]? | select(.type == "users" and .attributes."is-service-account") | {key: .id, value: true}]
+        [.included[]?
+        | select(.type == "users" and .attributes."is-service-account")
+        | {key: .id, value: true}]
         | from_entries
       ) as $service_accounts
       | [
